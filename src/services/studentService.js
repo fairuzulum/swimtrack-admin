@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
 const studentCollectionRef = collection(db, "students");
@@ -14,17 +14,8 @@ export const getAllStudents = async () => {
   }
 };
 
-/**
- * ===============================================================
- * FUNGSI BARU UNTUK MENDAFTARKAN SISWA
- * ===============================================================
- * @param {Object} studentData - Data siswa baru (name, nickname)
- * @returns {Promise}
- */
 export const registerStudent = async (studentData) => {
   try {
-    // Menambahkan data baru ke koleksi 'students'
-    // Sisa sesi (remainingSessions) otomatis diatur ke 0
     await addDoc(studentCollectionRef, {
       name: studentData.name,
       nickname: studentData.nickname,
@@ -32,7 +23,39 @@ export const registerStudent = async (studentData) => {
     });
   } catch (error) {
     console.error("Error mendaftarkan siswa:", error);
-    // Melemparkan error kembali agar bisa ditangkap oleh UI
     throw new Error("Gagal menyimpan data siswa ke server.");
+  }
+};
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK UPDATE DATA SISWA
+ * ===============================================================
+ * @param {string} studentId - ID dokumen siswa yang akan diupdate
+ * @param {Object} updatedData - Data baru (name, nickname)
+ */
+export const updateStudent = async (studentId, updatedData) => {
+  try {
+    const studentDoc = doc(db, "students", studentId);
+    await updateDoc(studentDoc, updatedData);
+  } catch (error) {
+    console.error("Error mengupdate data siswa:", error);
+    throw new Error("Gagal mengupdate data siswa.");
+  }
+};
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK MENGHAPUS DATA SISWA
+ * ===============================================================
+ * @param {string} studentId - ID dokumen siswa yang akan dihapus
+ */
+export const deleteStudent = async (studentId) => {
+  try {
+    const studentDoc = doc(db, "students", studentId);
+    await deleteDoc(studentDoc);
+  } catch (error) {
+    console.error("Error menghapus siswa:", error);
+    throw new Error("Gagal menghapus siswa.");
   }
 };
