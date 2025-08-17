@@ -1,28 +1,29 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LogoutButton from '../components/LogoutButton';
+import StudentList from '../components/StudentList'; // Impor komponen baru
 
 const DashboardPage = () => {
-  const { currentUser } = useAuth(); // Mengambil data user yang sedang login
+  const { currentUser } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard Admin</h1>
-          <p className="text-gray-500">Selamat datang, {currentUser?.email}</p>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header Tetap Sama */}
+      <header className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+            <p className="text-sm text-gray-500">Login sebagai: {currentUser?.email}</p>
+          </div>
+          <LogoutButton />
         </div>
-        <LogoutButton />
       </header>
-
-      {/* Konten dashboard akan kita tambahkan di tahap berikutnya */}
-      <div className="p-8 bg-white rounded-xl shadow-lg">
-        <h2 className="text-xl font-semibold">Konten Dashboard</h2>
-        <p className="mt-2 text-gray-600">
-          Halaman untuk menampilkan data siswa, keuangan, dan fitur lainnya akan
-          dibuat di sini pada tahap selanjutnya.
-        </p>
-      </div>
+      
+      {/* Konten Utama Dashboard */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Di sinilah kita menampilkan komponen daftar siswa */}
+        <StudentList />
+      </main>
     </div>
   );
 };
