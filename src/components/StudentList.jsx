@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom'; // <-- 1. Impor komponen Link
 import { getAllStudents, deleteStudent } from '../services/studentService';
 import Modal from './Modal';
 import EditStudentForm from './EditStudentForm';
@@ -8,11 +9,9 @@ const StudentList = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State khusus untuk modal edit
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // useEffect akan mengambil data setiap kali komponen dimuat atau refreshTrigger berubah
   useEffect(() => {
     const fetchStudents = async () => {
       setLoading(true);
@@ -24,19 +23,16 @@ const StudentList = ({ refreshTrigger }) => {
     fetchStudents();
   }, [refreshTrigger]);
 
-  // Fungsi untuk membuka modal edit dan menyimpan data siswa yang dipilih
   const handleEditClick = (student) => {
     setSelectedStudent(student);
     setIsEditModalOpen(true);
   };
 
-  // Fungsi untuk menangani aksi hapus dengan konfirmasi
   const handleDeleteClick = async (student) => {
     if (window.confirm(`Apakah Anda yakin ingin menghapus member "${student.name}"? Aksi ini tidak dapat dibatalkan.`)) {
       try {
         await deleteStudent(student.id);
         alert('Member berhasil dihapus.');
-        // Refresh daftar siswa dengan memfilter state yang sudah ada untuk UI yang lebih cepat
         setStudents(prevStudents => prevStudents.filter(s => s.id !== student.id));
       } catch (error) {
         alert(error.message);
@@ -44,11 +40,9 @@ const StudentList = ({ refreshTrigger }) => {
     }
   };
   
-  // Fungsi yang dipanggil setelah form edit berhasil disimpan
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
     alert('Data member berhasil diperbarui.');
-    // Ambil ulang data dari server untuk memastikan data paling update
     const fetch = async () => {
         setLoading(true);
         const studentData = await getAllStudents();
@@ -58,7 +52,6 @@ const StudentList = ({ refreshTrigger }) => {
     fetch();
   };
 
-  // Logika filter pencarian (tidak berubah)
   const filteredStudents = useMemo(() => {
     if (!searchTerm) return students;
     return students.filter(student =>
@@ -104,7 +97,15 @@ const StudentList = ({ refreshTrigger }) => {
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {/* =============================================================== */}
+                      {/* PERUBAHAN UTAMA ADA DI SINI */}
+                      {/* =============================================================== */}
+                      <Link to={`/member/${student.id}`} className="text-blue-600 hover:underline hover:text-blue-800">
+                        {student.name}
+                      </Link>
+                      {/* =============================================================== */}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.nickname || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`px-3 py-1 inline-flex text-sm font-semibold rounded-full ${student.remainingSessions > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -131,7 +132,6 @@ const StudentList = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* Modal untuk Edit Siswa akan muncul di sini jika isEditModalOpen true */}
       <Modal 
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 

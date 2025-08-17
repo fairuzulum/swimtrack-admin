@@ -226,3 +226,24 @@ export const getPaymentHistory = async (studentId) => {
         return [];
     }
 };
+
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK UPDATE SESI SECARA MANUAL
+ * ===============================================================
+ * @param {string} studentId - ID dokumen siswa.
+ * @param {number} newSessionCount - Jumlah sesi baru.
+ */
+export const updateStudentSessions = async (studentId, newSessionCount) => {
+  try {
+    const studentDoc = doc(db, "students", studentId);
+    // Menggunakan updateDoc untuk mengubah satu field spesifik
+    await updateDoc(studentDoc, {
+      remainingSessions: newSessionCount
+    });
+  } catch (error) {
+    console.error("Error mengupdate sesi siswa:", error);
+    throw new Error("Gagal mengupdate sesi siswa.");
+  }
+};
