@@ -59,3 +59,48 @@ export const deleteStudent = async (studentId) => {
     throw new Error("Gagal menghapus siswa.");
   }
 };
+
+
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK MENGAMBIL LAPORAN KEUANGAN LENGKAP
+ * ===============================================================
+ * Mengambil semua siswa, lalu mengambil riwayat pembayaran dari setiap siswa,
+ * dan menggabungkannya menjadi satu laporan.
+ * @returns {Promise<Array>} Laporan yang berisi { studentName, totalAmount }
+ */
+export const getFinancialReport = async () => {
+  try {
+    // 1. Ambil semua data siswa terlebih dahulu
+    const studentsSnapshot = await getDocs(studentCollectionRef);
+    const students = studentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+
+    // 2. Gunakan Promise.all untuk mengambil semua data pembayaran secara paralel (lebih cepat)
+    const allPaymentsPromises = students.map(student => {
+      const paymentsCollectionRef = collection(db, "students", student.id, "payments");
+      return getDocs(paymentsCollectionRef);
+    });
+
+    const allPaymentsSnapshots = await Promise.all(allPaymentsPromises);
+
+    // 3. Proses dan gabungkan data
+    const financialReport = students.map((student, index) => {
+      const paymentsSnapshot = allPaymentsSnapshots[index];
+      const payments = paymentsSnapshot.docs.map(doc => doc.data());
+      const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+      
+      return {
+        studentName: student.name,
+        totalAmount,
+      };
+    }).filter(report => report.totalAmount > 0) // Hanya tampilkan siswa yang pernah bayar
+      .sort((a, b) => b.totalAmount - a.totalAmount); // Urutkan dari pemasukan terbesar
+
+    return financialReport;
+
+  } catch (error) {
+    console.error("Error mengambil laporan keuangan:", error);
+    throw new Error("Gagal mengambil laporan keuangan dari server.");
+  }
+};
