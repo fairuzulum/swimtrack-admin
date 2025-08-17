@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp, writeBatch } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
 const studentCollectionRef = collection(db, "students");
@@ -285,4 +285,83 @@ export const checkIfStudentAttendedToday = async (studentId) => {
     // Jika terjadi error, kita anggap belum absen agar tidak menghalangi
     return false; 
   }
+};
+
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK BACKUP & RESTORE
+ * ===============================================================
+ */
+
+/**
+ * Mengekspor semua data member termasuk riwayat pembayaran dan absensi.
+ * @returns {Promise<Object>} Objek JSON yang berisi semua data.
+ */
+export const exportAllData = async () => {
+  const studentsSnapshot = await getDocs(collection(db, "students"));
+  const backupData = [];
+
+  for (const studentDoc of studentsSnapshot.docs) {
+    const studentData = { ...studentDoc.data(), id: studentDoc.id };
+    
+    // Ambil sub-collection payments
+    const paymentsSnapshot = await getDocs(collection(db, "students", studentDoc.id, "payments"));
+    studentData.payments = paymentsSnapshot.docs.map(doc => doc.data());
+    
+    // Ambil sub-collection attendances
+    const attendancesSnapshot = await getDocs(collection(db, "students", studentDoc.id, "attendances"));
+    studentData.attendances = attendancesSnapshot.docs.map(doc => doc.data());
+    
+    backupData.push(studentData);
+  }
+  return { version: "1.0", createdAt: new Date().toISOString(), students: backupData };
+};
+
+/**
+ * Mengimpor data dari file backup. INI AKAN MENGHAPUS SEMUA DATA LAMA.
+ * @param {Array} studentsData - Array data siswa dari file JSON.
+ */
+export const importAllData = async (studentsData) => {
+  // Peringatan Keamanan: Fungsi ini sangat destruktif.
+  // Pertama, hapus semua dokumen yang ada di koleksi 'students'.
+  const existingStudents = await getDocs(collection(db, "students"));
+  const deleteBatch = writeBatch(db);
+  existingStudents.forEach(doc => {
+    deleteBatch.delete(doc.ref);
+  });
+  await deleteBatch.commit();
+
+  // Kedua, impor data baru menggunakan batch write untuk efisiensi.
+  const importBatch = writeBatch(db);
+  studentsData.forEach(student => {
+    // Buat referensi dokumen baru (Firebase akan generate ID baru)
+    const studentRef = doc(collection(db, "students"));
+    
+    // Ambil data siswa utama tanpa sub-collection
+    const { payments, attendances, id, ...mainStudentData } = student;
+    importBatch.set(studentRef, mainStudentData);
+    
+    // Impor sub-collection payments
+    if (payments && payments.length > 0) {
+      payments.forEach(payment => {
+        // Firestore butuh object Date, bukan string/timestamp dari JSON
+        const paymentData = { ...payment, date: new Date(payment.date.seconds * 1000) };
+        const paymentRef = doc(collection(studentRef, "payments"));
+        importBatch.set(paymentRef, paymentData);
+      });
+    }
+
+    // Impor sub-collection attendances
+    if (attendances && attendances.length > 0) {
+      attendances.forEach(attendance => {
+        const attendanceData = { ...attendance, date: new Date(attendance.date.seconds * 1000) };
+        const attendanceRef = doc(collection(studentRef, "attendances"));
+        importBatch.set(attendanceRef, attendanceData);
+      });
+    }
+  });
+
+  // Commit semua operasi tulis sekaligus
+  await importBatch.commit();
 };
