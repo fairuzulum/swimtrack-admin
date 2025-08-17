@@ -29,6 +29,9 @@ const MainLayout = () => {
            <NavLink to="/attendance" className={navLinkClasses}>
             <span>Absen Kehadiran</span>
           </NavLink>
+          <NavLink to="/payments" className={navLinkClasses}>
+            <span>Pembayaran</span>
+          </NavLink>
           <NavLink to="/financials" className={navLinkClasses}>
             <span>Laporan Keuangan</span>
           </NavLink>

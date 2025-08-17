@@ -7,6 +7,7 @@ import FinancialPage from './pages/FinancialPage';
 import MainLayout from './components/MainLayout';
 import AttendancePage from './pages/AttendancePage';
 import StudentDetailPage from './pages/StudentDetailPage';
+import PaymentPage from './pages/PaymentPage';
 
 // Komponen untuk melindungi halaman yang butuh login
 function ProtectedRoute({ children }) {
@@ -36,6 +37,7 @@ function App() {
           <Route index element={<DashboardPage />} /> 
           {/* Halaman Laporan Keuangan */}
           <Route path="financials" element={<FinancialPage />} />
+          <Route path="payments" element={<PaymentPage />} />
           <Route path="attendance" element={<AttendancePage />} />
           <Route path="member/:id" element={<StudentDetailPage />} />
         </Route>
