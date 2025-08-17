@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
 const studentCollectionRef = collection(db, "students");
@@ -245,5 +245,44 @@ export const updateStudentSessions = async (studentId, newSessionCount) => {
   } catch (error) {
     console.error("Error mengupdate sesi siswa:", error);
     throw new Error("Gagal mengupdate sesi siswa.");
+  }
+};
+
+
+/**
+ * ===============================================================
+ * FUNGSI BARU UNTUK VALIDASI ABSENSI HARIAN
+ * ===============================================================
+ * Mengecek apakah seorang siswa sudah diabsen pada hari ini.
+ * @param {string} studentId - ID dokumen siswa.
+ * @returns {Promise<boolean>} - Mengembalikan true jika sudah absen, false jika belum.
+ */
+export const checkIfStudentAttendedToday = async (studentId) => {
+  try {
+    const today = new Date();
+    // Set waktu ke awal hari (00:00:00)
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+    // Set waktu ke akhir hari (23:59:59)
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+    const attendanceRef = collection(db, "students", studentId, "attendances");
+    
+    // Buat query untuk mencari absensi di rentang waktu hari ini
+    const q = query(
+      attendanceRef,
+      where("date", ">=", Timestamp.fromDate(startOfDay)),
+      where("date", "<=", Timestamp.fromDate(endOfDay)),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    
+    // Jika ada dokumen yang ditemukan, berarti sudah absen
+    return !querySnapshot.empty;
+
+  } catch (error) {
+    console.error("Error mengecek absensi hari ini:", error);
+    // Jika terjadi error, kita anggap belum absen agar tidak menghalangi
+    return false; 
   }
 };

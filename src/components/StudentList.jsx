@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom'; // <-- 1. Impor komponen Link
+import { useNavigate } from 'react-router-dom'; // <-- 1. Impor useNavigate
 import { getAllStudents, deleteStudent } from '../services/studentService';
 import Modal from './Modal';
 import EditStudentForm from './EditStudentForm';
@@ -11,6 +11,7 @@ const StudentList = ({ refreshTrigger }) => {
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const navigate = useNavigate(); // <-- 2. Inisialisasi hook navigasi
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -98,13 +99,8 @@ const StudentList = ({ refreshTrigger }) => {
                 filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {/* =============================================================== */}
-                      {/* PERUBAHAN UTAMA ADA DI SINI */}
-                      {/* =============================================================== */}
-                      <Link to={`/member/${student.id}`} className="text-blue-600 hover:underline hover:text-blue-800">
-                        {student.name}
-                      </Link>
-                      {/* =============================================================== */}
+                      {/* Nama siswa sekarang hanya teks biasa */}
+                      {student.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.nickname || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -113,10 +109,15 @@ const StudentList = ({ refreshTrigger }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {/* =============================================================== */}
+                      {/* PERUBAHAN UTAMA ADA DI DALAM DIV DI BAWAH INI */}
+                      {/* =============================================================== */}
                       <div className="flex justify-end gap-4">
+                        <button onClick={() => navigate(`/member/${student.id}`)} className="text-green-600 hover:text-green-900 font-semibold">Detail</button>
                         <button onClick={() => handleEditClick(student)} className="text-blue-600 hover:text-blue-900 font-semibold">Edit</button>
                         <button onClick={() => handleDeleteClick(student)} className="text-red-600 hover:text-red-900 font-semibold">Hapus</button>
                       </div>
+                      {/* =============================================================== */}
                     </td>
                   </tr>
                 ))
