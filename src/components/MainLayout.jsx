@@ -39,7 +39,7 @@ const MainLayout = () => {
             <span>Backup Data</span>
           </NavLink>
           <NavLink to="/settings" className={navLinkClasses}>
-            <span>Pengaturan</span>
+            <span>Pengaturan Pin</span>
           </NavLink>
         </nav>
       </aside>

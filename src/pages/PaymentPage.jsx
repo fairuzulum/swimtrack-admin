@@ -35,7 +35,7 @@ const PaymentPage = () => {
   const handlePaymentSuccess = () => {
     setIsModalOpen(false);
     alert('Pembayaran berhasil ditambahkan!');
-    fetchStudents(); // Ambil ulang data untuk refresh sisa sesi
+    fetchStudents(); // Ambil ulang data untuk refresh sisa pertemuan
   };
 
   // Logika untuk filter pencarian
@@ -74,7 +74,7 @@ const PaymentPage = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Member</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Sesi</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Pertemuan</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>

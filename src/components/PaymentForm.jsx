@@ -38,7 +38,7 @@ const PaymentForm = ({ student, onSuccess }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="amount" className="block text-sm font-medium text-gray-700">Jumlah Pembayaran</label>
-        <p className="text-xs text-gray-500 mb-2">Satu paket (4 sesi) = Rp 250.000</p>
+        <p className="text-xs text-gray-500 mb-2">Satu paket (4 pertemuan) = Rp 250.000</p>
         <input
           id="amount"
           type="number"
@@ -49,7 +49,7 @@ const PaymentForm = ({ student, onSuccess }) => {
           className="mt-1 w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="text-sm text-gray-600 mt-2">
-            Total Sesi Ditambahkan: <strong>{(Number(amount) / 250000) * 4 || 0} Sesi</strong>
+            Total Pertemuan Ditambahkan: <strong>{(Number(amount) / 250000) * 4 || 0} Pertemuan</strong>
         </p>
       </div>
 

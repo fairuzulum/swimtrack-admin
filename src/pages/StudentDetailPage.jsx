@@ -17,7 +17,7 @@ const EditSessionForm = ({ student, onSessionUpdate }) => {
     setLoading(true);
     try {
       await updateStudentSessions(student.id, newSessionCount);
-      alert("Jumlah sesi berhasil diperbarui!");
+      alert("Jumlah pertemuan berhasil diperbarui!");
       onSessionUpdate(newSessionCount); // Callback untuk update data di halaman utama
     } catch (error) {
       alert(error.message);
@@ -28,7 +28,7 @@ const EditSessionForm = ({ student, onSessionUpdate }) => {
 
   return (
     <div className="mt-4 p-4 border rounded-lg bg-gray-50">
-      <label htmlFor="session-input" className="block text-sm font-medium text-gray-700">Edit Sisa Sesi Manual</label>
+      <label htmlFor="session-input" className="block text-sm font-medium text-gray-700">Edit Sisa Pertemuan Manual</label>
       <div className="mt-2 flex items-center gap-2">
         <input
           id="session-input"
@@ -107,7 +107,7 @@ const StudentDetailPage = () => {
         {student.nickname && <p className="text-lg text-gray-500">({student.nickname})</p>}
         
         <div className="mt-4 flex items-center gap-2">
-            <span className="text-gray-600">Sisa Sesi:</span>
+            <span className="text-gray-600">Sisa Pertemuan:</span>
             <span className={`text-2xl font-bold ${student.remainingSessions > 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {student.remainingSessions}
             </span>
@@ -141,7 +141,7 @@ const StudentDetailPage = () => {
                     <p className="text-gray-700">{formatDate(item.date)}</p>
                     <p className="text-sm text-gray-500">{formatCurrency(item.amount)}</p>
                   </div>
-                  <span className="font-semibold text-green-600">+{item.sessionsAdded} Sesi</span>
+                  <span className="font-semibold text-green-600">+{item.sessionsAdded} Pertemuan</span>
                 </li>
               )) : <li className="py-3 text-gray-400">Belum ada riwayat.</li>}
             </ul>

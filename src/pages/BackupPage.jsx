@@ -77,7 +77,7 @@ const BackupPage = () => {
       {/* Bagian Export */}
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <h2 className="text-xl font-bold text-gray-800">1. Export Data Member</h2>
-        <p className="mt-2 text-gray-600">Simpan semua data member, termasuk sisa sesi, riwayat absensi, dan riwayat pembayaran ke dalam satu file JSON yang aman.</p>
+        <p className="mt-2 text-gray-600">Simpan semua data member, termasuk sisa pertemuan, riwayat absensi, dan riwayat pembayaran ke dalam satu file JSON yang aman.</p>
         <button
           onClick={handleExport}
           disabled={exporting}

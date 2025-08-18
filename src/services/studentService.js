@@ -243,8 +243,8 @@ export const updateStudentSessions = async (studentId, newSessionCount) => {
       remainingSessions: newSessionCount
     });
   } catch (error) {
-    console.error("Error mengupdate sesi siswa:", error);
-    throw new Error("Gagal mengupdate sesi siswa.");
+    console.error("Error mengupdate pertemuan siswa:", error);
+    throw new Error("Gagal mengupdate pertemuan siswa.");
   }
 };
 
@@ -365,5 +365,3 @@ export const importAllData = async (studentsData) => {
   // Commit semua operasi tulis sekaligus
   await importBatch.commit();
 };
-
-
