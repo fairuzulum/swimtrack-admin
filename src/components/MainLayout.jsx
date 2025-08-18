@@ -44,6 +44,9 @@ const MainLayout = () => {
           <NavLink to="/settings" className={navLinkClasses}>
             <span>Pengaturan Pin</span>
           </NavLink>
+          <NavLink to="/reset-password" className={navLinkClasses}>
+            <span>Ganti Password</span>
+          </NavLink>
         </nav>
       </aside>
 
