@@ -10,6 +10,7 @@ import StudentDetailPage from './pages/StudentDetailPage';
 import PaymentPage from './pages/PaymentPage';
 import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
+import ReportPage from './pages/ReportPage';
 
 // Komponen untuk melindungi halaman yang butuh login
 function ProtectedRoute({ children }) {
@@ -43,6 +44,7 @@ function App() {
           <Route path="attendance" element={<AttendancePage />} />
           <Route path="member/:id" element={<StudentDetailPage />} />
           <Route path="backup" element={<BackupPage />} />
+          <Route path="reports" element={<ReportPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
 

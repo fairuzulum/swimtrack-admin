@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp, writeBatch } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 
@@ -364,4 +365,108 @@ export const importAllData = async (studentsData) => {
 
   // Commit semua operasi tulis sekaligus
   await importBatch.commit();
+};
+
+
+// ===============================================================
+// FUNGSI BARU UNTUK EXPORT & IMPORT EXCEL
+// ===============================================================
+
+/**
+ * Mengambil data siswa dan mengubahnya menjadi format workbook Excel.
+ * @returns {Promise<XLSX.WorkBook>}
+ */
+export const exportStudentsToExcel = async () => {
+  const studentsSnapshot = await getDocs(studentCollectionRef);
+  const studentsData = studentsSnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      "Nama Lengkap": data.name,
+      "Nama Panggilan": data.nickname || "",
+      "Sisa Pertemuan": data.remainingSessions || 0,
+    };
+  });
+
+  if (studentsData.length === 0) {
+    throw new Error("Tidak ada data member untuk diekspor.");
+  }
+
+  // Buat worksheet dari data JSON
+  const ws = XLSX.utils.json_to_sheet(studentsData);
+  // Buat workbook baru
+  const wb = XLSX.utils.book_new();
+  // Tambahkan worksheet ke workbook
+  XLSX.utils.book_append_sheet(wb, ws, "Daftar Member");
+
+  return wb;
+};
+
+/**
+ * Membaca file Excel dan memperbarui data siswa di Firestore.
+ * @param {File} file - File Excel yang diunggah pengguna.
+ * @returns {Promise<number>} Jumlah siswa yang berhasil diupdate.
+ */
+export const importStudentsFromExcel = async (file) => {
+  return new Promise(async (resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        if (!json || json.length === 0) {
+          return reject(new Error("File Excel kosong atau format tidak sesuai."));
+        }
+
+        // Ambil semua siswa yang ada di database
+        const existingStudentsSnapshot = await getDocs(studentCollectionRef);
+        const existingStudentsMap = new Map();
+        existingStudentsSnapshot.forEach(doc => {
+          existingStudentsMap.set(doc.data().name.toLowerCase().trim(), doc.id);
+        });
+
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+
+        json.forEach(row => {
+          const name = row["Nama Lengkap"];
+          const nickname = row["Nama Panggilan"];
+          const remainingSessions = row["Sisa Pertemuan"];
+
+          if (name && typeof name === 'string') {
+            const studentId = existingStudentsMap.get(name.toLowerCase().trim());
+            if (studentId) {
+              const studentRef = doc(db, "students", studentId);
+              const updateData = {};
+              if (nickname !== undefined) {
+                updateData.nickname = nickname;
+              }
+              if (remainingSessions !== undefined && !isNaN(parseInt(remainingSessions))) {
+                updateData.remainingSessions = parseInt(remainingSessions);
+              }
+
+              if (Object.keys(updateData).length > 0) {
+                 batch.update(studentRef, updateData);
+                 updatedCount++;
+              }
+            }
+          }
+        });
+
+        if (updatedCount === 0) {
+          return reject(new Error("Tidak ada nama member di Excel yang cocok dengan data di database."));
+        }
+
+        await batch.commit();
+        resolve(updatedCount);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsArrayBuffer(file);
+  });
 };
