@@ -38,6 +38,9 @@ const MainLayout = () => {
           <NavLink to="/backup" className={navLinkClasses}>
             <span>Backup Data</span>
           </NavLink>
+          <NavLink to="/settings" className={navLinkClasses}>
+            <span>Pengaturan</span>
+          </NavLink>
         </nav>
       </aside>
 
