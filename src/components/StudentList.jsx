@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom'; // <-- 1. Impor useNavigate
+import { useNavigate } from 'react-router-dom';
 import { getAllStudents, deleteStudent } from '../services/studentService';
 import Modal from './Modal';
 import EditStudentForm from './EditStudentForm';
+import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa'; // Import ikon
 
 const StudentList = ({ refreshTrigger }) => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const navigate = useNavigate(); // <-- 2. Inisialisasi hook navigasi
+  const navigate = useNavigate();
+
+  // State untuk sorting
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'ascending' });
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -53,13 +56,64 @@ const StudentList = ({ refreshTrigger }) => {
     fetch();
   };
 
-  const filteredStudents = useMemo(() => {
-    if (!searchTerm) return students;
-    return students.filter(student =>
+  // Logika untuk sorting dan filtering
+  const sortedAndFilteredStudents = useMemo(() => {
+    let sortableStudents = [...students];
+
+    // Sorting
+    if (sortConfig.key) {
+      sortableStudents.sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+
+        // Penanganan untuk nilai null atau undefined (misal: nickname)
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+        
+        // Penanganan untuk tipe data number (remainingSessions)
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+        }
+
+        // Penanganan untuk tipe data string (name, nickname)
+        if (aValue.toString().toLowerCase() < bValue.toString().toLowerCase()) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue.toString().toLowerCase() > bValue.toString().toLowerCase()) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    // Filtering
+    if (!searchTerm) return sortableStudents;
+    return sortableStudents.filter(student =>
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.nickname?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [students, searchTerm]);
+  }, [students, searchTerm, sortConfig]);
+
+  // Fungsi untuk mengubah konfigurasi sorting
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Fungsi untuk menampilkan ikon sorting yang sesuai
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) {
+      return <FaSort className="inline-block ml-2 text-gray-400" />;
+    }
+    return sortConfig.direction === 'ascending' ? 
+      <FaSortUp className="inline-block ml-2 text-blue-600" /> : 
+      <FaSortDown className="inline-block ml-2 text-blue-600" />;
+  };
 
   if (loading) {
     return <div className="text-center p-8 text-gray-500">Memuat data member...</div>;
@@ -88,18 +142,26 @@ const StudentList = ({ refreshTrigger }) => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Panggilan</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Pertemuan</th>
+                {/* =============================================================== */}
+                {/* HEADER TABEL DIBUAT INTERAKTIF DI SINI */}
+                {/* =============================================================== */}
+                <th onClick={() => requestSort('name')} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Nama Lengkap {getSortIcon('name')}
+                </th>
+                <th onClick={() => requestSort('nickname')} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Nama Panggilan {getSortIcon('nickname')}
+                </th>
+                <th onClick={() => requestSort('remainingSessions')} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                  Sisa Pertemuan {getSortIcon('remainingSessions')}
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => (
+              {sortedAndFilteredStudents.length > 0 ? (
+                sortedAndFilteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {/* Nama siswa sekarang hanya teks biasa */}
                       {student.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.nickname || '-'}</td>
@@ -109,15 +171,11 @@ const StudentList = ({ refreshTrigger }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {/* =============================================================== */}
-                      {/* PERUBAHAN UTAMA ADA DI DALAM DIV DI BAWAH INI */}
-                      {/* =============================================================== */}
                       <div className="flex justify-end gap-4">
                         <button onClick={() => navigate(`/member/${student.id}`)} className="text-green-600 hover:text-green-900 font-semibold">Detail</button>
                         <button onClick={() => handleEditClick(student)} className="text-blue-600 hover:text-blue-900 font-semibold">Edit</button>
                         <button onClick={() => handleDeleteClick(student)} className="text-red-600 hover:text-red-900 font-semibold">Hapus</button>
                       </div>
-                      {/* =============================================================== */}
                     </td>
                   </tr>
                 ))
