@@ -8,6 +8,7 @@ const SettingsPage = () => {
     absensi: { isEnabled: false, pin: '' },
     pembayaran: { isEnabled: false, pin: '' },
     keuangan: { isEnabled: false, pin: '' },
+    laporan: { isEnabled: false, pin: '' }, // <-- TAMBAHKAN INI
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -18,7 +19,18 @@ const SettingsPage = () => {
       try {
         const currentSettings = await getMenuPasswords();
         if (currentSettings) {
-          setSettings(currentSettings);
+          // Pastikan semua field ada, termasuk yang baru
+          setSettings(prev => ({
+            ...{
+              listSiswa: { isEnabled: false, pin: '' },
+              register: { isEnabled: false, pin: '' },
+              absensi: { isEnabled: false, pin: '' },
+              pembayaran: { isEnabled: false, pin: '' },
+              keuangan: { isEnabled: false, pin: '' },
+              laporan: { isEnabled: false, pin: '' },
+            },
+            ...currentSettings 
+          }));
         }
       } catch (error) {
         alert('Gagal memuat pengaturan: ' + error.message);
@@ -59,12 +71,14 @@ const SettingsPage = () => {
     }
   };
 
+  // TAMBAHKAN LABEL BARU DI SINI
   const menuLabels = {
     listSiswa: 'Daftar Member (App)',
     register: 'Registrasi Member (App)',
     absensi: 'Absensi (App)',
     pembayaran: 'Pembayaran (App)',
     keuangan: 'Keuangan (App)',
+    laporan: 'Laporan Kehadiran (App)', // <-- TAMBAHKAN INI
   };
 
   if (loading) {
@@ -80,7 +94,7 @@ const SettingsPage = () => {
             <div className="flex-1">
               <h3 className="font-semibold text-gray-700">{menuLabels[menuKey]}</h3>
               <p className="text-sm text-gray-500">
-                {settings[menuKey]?.isEnabled ? 'PIN Absen Aktif' : 'PIN Absen Nonaktif'}
+                {settings[menuKey]?.isEnabled ? 'PIN Aktif' : 'PIN Nonaktif'}
               </p>
             </div>
             <div className="flex items-center gap-4">
