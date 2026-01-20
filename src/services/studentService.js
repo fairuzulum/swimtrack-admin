@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp, writeBatch } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { detectClassFromTime } from '../utils/classUtils';
 
 const studentCollectionRef = collection(db, "students");
 
@@ -469,4 +470,55 @@ export const importStudentsFromExcel = async (file) => {
     reader.onerror = (error) => reject(error);
     reader.readAsArrayBuffer(file);
   });
+};
+
+
+export const getStudentClassStats = async (startDate, endDate) => {
+  try {
+    const studentCollectionRef = collection(db, "students"); //
+    const studentsSnapshot = await getDocs(studentCollectionRef);
+    const stats = [];
+
+    for (const studentDoc of studentsSnapshot.docs) {
+      const studentData = { ...studentDoc.data(), id: studentDoc.id };
+      const attendanceRef = collection(db, "students", studentDoc.id, "attendances"); //
+      
+      let q;
+      if (startDate && endDate) {
+        q = query(
+          attendanceRef,
+          where("date", ">=", Timestamp.fromDate(startDate)),
+          where("date", "<=", Timestamp.fromDate(endDate))
+        );
+      } else {
+        q = query(attendanceRef);
+      }
+      
+      const attDocs = await getDocs(q);
+      
+      // counts untuk jumlah, history untuk detail jam
+      const counts = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, J: 0, X: 0 };
+      const history = { A: [], B: [], C: [], D: [], E: [], F: [], J: [], X: [] };
+      
+      attDocs.forEach(doc => {
+        const d = doc.data().date.toDate();
+        const classId = detectClassFromTime(d);
+        if (classId) {
+          counts[classId]++;
+          history[classId].push(d); // Simpan object Date
+        }
+      });
+
+      stats.push({
+        ...studentData,
+        classCounts: counts,
+        classHistory: history,
+        totalInPeriod: attDocs.size
+      });
+    }
+    return stats;
+  } catch (error) {
+    console.error("Gagal ambil statistik:", error);
+    return [];
+  }
 };

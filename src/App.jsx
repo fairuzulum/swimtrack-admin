@@ -12,6 +12,7 @@ import BackupPage from './pages/BackupPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportPage from './pages/ReportPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ClassReportPage from './pages/ClassReportPage';
 
 // Komponen untuk melindungi halaman yang butuh login
 function ProtectedRoute({ children }) {
@@ -48,6 +49,8 @@ function App() {
           <Route path="reports" element={<ReportPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="class-report" element={<ClassReportPage />} />
+
         </Route>
 
       </Routes>
