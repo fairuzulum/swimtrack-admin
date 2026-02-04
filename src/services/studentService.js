@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp, writeBatch } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, runTransaction, query, where, orderBy, limit, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { detectClassFromTime } from '../utils/classUtils';
 
@@ -520,5 +520,65 @@ export const getStudentClassStats = async (startDate, endDate) => {
   } catch (error) {
     console.error("Gagal ambil statistik:", error);
     return [];
+  }
+};
+
+
+/**
+ * Mendengarkan perubahan data keuangan secara real-time dengan detail riwayat.
+ */
+export const subscribeToFinancialReport = (onUpdate, onError) => {
+  try {
+    return onSnapshot(studentCollectionRef, (studentsSnapshot) => {
+      const students = studentsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const financialReport = [];
+      let activeListeners = [];
+
+      if (students.length === 0) {
+        onUpdate([]);
+        return;
+      }
+
+      students.forEach((student) => {
+        const paymentsRef = collection(db, "students", student.id, "payments");
+        
+        // Listen ke setiap riwayat pembayaran siswa
+        const unsubscribePayment = onSnapshot(paymentsRef, (paymentsSnapshot) => {
+          const payments = paymentsSnapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id
+          })).sort((a, b) => b.date.seconds - a.date.seconds); // Urutkan pembayaran terbaru di atas
+
+          const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+
+          const reportItem = {
+            studentId: student.id,
+            studentName: student.name,
+            totalAmount,
+            paymentHistory: payments // Tambahkan detail history
+          };
+
+          const existingIndex = financialReport.findIndex(r => r.studentId === student.id);
+          if (existingIndex > -1) {
+            financialReport[existingIndex] = reportItem;
+          } else {
+            financialReport.push(reportItem);
+          }
+
+          const filteredReport = financialReport
+            .filter(r => r.totalAmount > 0)
+            .sort((a, b) => b.totalAmount - a.totalAmount);
+            
+          onUpdate(filteredReport);
+        }, onError);
+        
+        activeListeners.push(unsubscribePayment);
+      });
+
+      // Cleanup semua listener
+      return () => activeListeners.forEach(unsub => unsub());
+    }, onError);
+  } catch (error) {
+    onError(error);
   }
 };
