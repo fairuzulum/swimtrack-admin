@@ -89,7 +89,7 @@ const FinancialPage = () => {
                     <td className="px-6 py-4">
                       <div className="font-bold text-gray-800 flex items-center gap-2">
                         {item.studentName}
-                        <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                        <span className="hidden text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
                           {item.paymentHistory.length}x Bayar
                         </span>
                       </div>
