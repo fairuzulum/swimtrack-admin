@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAllStudents, getPaymentsByDateRange } from '../services/studentService'; // Tambahkan import
+import * as XLSX from 'xlsx';
+import { getAllStudents, getPaymentsByDateRange, exportPaymentsToExcel } from '../services/studentService';
 import Modal from '../components/Modal';
 import PaymentForm from '../components/PaymentForm';
 
@@ -8,11 +9,12 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State baru untuk filter
+  // State untuk filter
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filteredPayments, setFilteredPayments] = useState(null); // null artinya mode list siswa biasa
   const [isFiltering, setIsFiltering] = useState(false);
+  const [totalFilteredAmount, setTotalFilteredAmount] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -38,6 +40,8 @@ const PaymentPage = () => {
     try {
       const results = await getPaymentsByDateRange(new Date(startDate), new Date(endDate));
       setFilteredPayments(results);
+      const total = results.reduce((sum, p) => sum + p.amount, 0);
+      setTotalFilteredAmount(total);
     } catch (error) {
       alert("Gagal mengambil data filter");
     } finally {
@@ -56,6 +60,8 @@ const PaymentPage = () => {
     try {
       const results = await getPaymentsByDateRange(today, today);
       setFilteredPayments(results);
+      const total = results.reduce((sum, p) => sum + p.amount, 0);
+      setTotalFilteredAmount(total);
     } catch (error) {
       alert("Gagal mengambil data hari ini");
     } finally {
@@ -67,6 +73,7 @@ const PaymentPage = () => {
     setFilteredPayments(null);
     setStartDate('');
     setEndDate('');
+    setTotalFilteredAmount(0);
   };
 
   const handlePaymentClick = (student) => {
@@ -81,6 +88,16 @@ const PaymentPage = () => {
       handleApplyFilter(); // Refresh list filter jika sedang dalam mode filter
     }
     fetchStudents();
+  };
+
+  const handleExportExcel = async () => {
+    if (!filteredPayments || filteredPayments.length === 0) return;
+    try {
+      const wb = await exportPaymentsToExcel(new Date(startDate), new Date(endDate));
+      XLSX.writeFile(wb, `pembayaran_${startDate}_sd_${endDate}.xlsx`);
+    } catch (error) {
+      alert("Gagal mengekspor data: " + error.message);
+    }
   };
 
   const filteredStudents = useMemo(() => {
@@ -115,7 +132,7 @@ const PaymentPage = () => {
           </div>
         </div>
 
-        {/* Filter Section Baru */}
+        {/* Filter Section */}
         <div className="bg-gray-50 p-4 rounded-lg mb-6 flex flex-wrap items-end gap-4 border border-gray-200">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-gray-600">Dari Tanggal</label>
@@ -150,12 +167,20 @@ const PaymentPage = () => {
               Hari Ini
             </button>
             {filteredPayments && (
-              <button 
-                onClick={resetFilter}
-                className="bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-500"
-              >
-                Reset
-              </button>
+              <>
+                <button 
+                  onClick={resetFilter}
+                  className="bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-500"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+                >
+                  Export Excel
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -231,6 +256,16 @@ const PaymentPage = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Tampilkan total jika dalam mode filter dan ada data */}
+        {filteredPayments && filteredPayments.length > 0 && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg flex justify-between items-center">
+            <span className="font-semibold text-gray-700">Total Pembayaran:</span>
+            <span className="text-xl font-bold text-green-600">
+              Rp {totalFilteredAmount.toLocaleString('id-ID')}
+            </span>
+          </div>
+        )}
       </div>
       
       <Modal 

@@ -631,3 +631,46 @@ export const getPaymentsByDateRange = async (startDate, endDate) => {
     throw error;
   }
 };
+
+// ===============================================================
+// FUNGSI UNTUK EXPORT HASIL FILTER PEMBAYARAN KE EXCEL
+// ===============================================================
+export const exportPaymentsToExcel = async (startDate, endDate) => {
+  try {
+    // Ambil data pembayaran dengan fungsi yang sudah ada
+    const payments = await getPaymentsByDateRange(startDate, endDate);
+    
+    if (payments.length === 0) {
+      throw new Error("Tidak ada data pembayaran untuk diekspor.");
+    }
+
+    // Transform data ke format yang siap untuk worksheet
+    const worksheetData = payments.map(p => ({
+      "Waktu": p.formattedDate,
+      "Nama Member": p.studentName,
+      "Nama Panggilan": p.studentNickname || '',
+      "Jumlah (Rp)": p.amount,
+      "Sesi Ditambah": p.sessionsAdded
+    }));
+
+    // Buat worksheet dan workbook
+    const ws = XLSX.utils.json_to_sheet(worksheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Riwayat Pembayaran");
+
+    // Atur lebar kolom agar lebih rapi (opsional)
+    const colWidths = [
+      { wch: 20 }, // Waktu
+      { wch: 25 }, // Nama Member
+      { wch: 15 }, // Nama Panggilan
+      { wch: 15 }, // Jumlah
+      { wch: 15 }  // Sesi Ditambah
+    ];
+    ws['!cols'] = colWidths;
+
+    return wb;
+  } catch (error) {
+    console.error("Error exporting payments to Excel:", error);
+    throw error;
+  }
+};
