@@ -582,3 +582,52 @@ export const subscribeToFinancialReport = (onUpdate, onError) => {
     onError(error);
   }
 };
+
+
+// Tambahkan fungsi ini di src/services/studentService.js
+
+/**
+ * Mengambil riwayat pembayaran dari semua siswa berdasarkan rentang tanggal.
+ * @param {Date} startDate - Tanggal mulai.
+ * @param {Date} endDate - Tanggal akhir.
+ */
+export const getPaymentsByDateRange = async (startDate, endDate) => {
+  try {
+    const studentsSnapshot = await getDocs(studentCollectionRef);
+    const allPayments = [];
+
+    // Set jam ke awal hari dan akhir hari agar pencarian akurat
+    const start = new Date(startDate.setHours(0, 0, 0, 0));
+    const end = new Date(endDate.setHours(23, 59, 59, 999));
+
+    for (const studentDoc of studentsSnapshot.docs) {
+      const studentData = studentDoc.data();
+      const paymentsRef = collection(db, "students", studentDoc.id, "payments");
+      
+      const q = query(
+        paymentsRef,
+        where("date", ">=", Timestamp.fromDate(start)),
+        where("date", "<=", Timestamp.fromDate(end))
+      );
+      
+      const paymentsSnapshot = await getDocs(q);
+      paymentsSnapshot.forEach(pDoc => {
+        const pData = pDoc.data();
+        allPayments.push({
+          ...pData,
+          id: pDoc.id,
+          studentName: studentData.name,
+          studentNickname: studentData.nickname,
+          // Mengonversi Firestore Timestamp ke JavaScript Date agar mudah diformat
+          formattedDate: pData.date.toDate().toLocaleString('id-ID')
+        });
+      });
+    }
+    
+    // Urutkan berdasarkan tanggal terbaru
+    return allPayments.sort((a, b) => b.date.seconds - a.date.seconds);
+  } catch (error) {
+    console.error("Error mengambil filter pembayaran:", error);
+    throw error;
+  }
+};

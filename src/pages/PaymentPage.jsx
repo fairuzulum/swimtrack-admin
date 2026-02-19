@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAllStudents } from '../services/studentService';
+import { getAllStudents, getPaymentsByDateRange } from '../services/studentService'; // Tambahkan import
 import Modal from '../components/Modal';
-import PaymentForm from '../components/PaymentForm'; // Kita akan buat komponen ini selanjutnya
+import PaymentForm from '../components/PaymentForm';
 
 const PaymentPage = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State untuk mengelola modal pembayaran
+  // State baru untuk filter
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [filteredPayments, setFilteredPayments] = useState(null); // null artinya mode list siswa biasa
+  const [isFiltering, setIsFiltering] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // Fungsi untuk mengambil data siswa
   const fetchStudents = async () => {
     setLoading(true);
     const studentData = await getAllStudents();
@@ -20,25 +24,65 @@ const PaymentPage = () => {
     setLoading(false);
   };
 
-  // Mengambil data saat komponen pertama kali dimuat
   useEffect(() => {
     fetchStudents();
   }, []);
 
-  // Fungsi untuk membuka modal dan menyimpan data siswa yang dipilih
+  // Fungsi untuk memproses filter
+  const handleApplyFilter = async () => {
+    if (!startDate || !endDate) {
+      alert("Pilih tanggal mulai dan akhir!");
+      return;
+    }
+    setIsFiltering(true);
+    try {
+      const results = await getPaymentsByDateRange(new Date(startDate), new Date(endDate));
+      setFilteredPayments(results);
+    } catch (error) {
+      alert("Gagal mengambil data filter");
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
+  // Shortcut Filter Hari Ini
+  const handleFilterToday = async () => {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+    
+    setIsFiltering(true);
+    try {
+      const results = await getPaymentsByDateRange(today, today);
+      setFilteredPayments(results);
+    } catch (error) {
+      alert("Gagal mengambil data hari ini");
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
+  const resetFilter = () => {
+    setFilteredPayments(null);
+    setStartDate('');
+    setEndDate('');
+  };
+
   const handlePaymentClick = (student) => {
     setSelectedStudent(student);
     setIsModalOpen(true);
   };
   
-  // Fungsi yang dipanggil setelah pembayaran berhasil
   const handlePaymentSuccess = () => {
     setIsModalOpen(false);
     alert('Pembayaran berhasil ditambahkan!');
-    fetchStudents(); // Ambil ulang data untuk refresh sisa pertemuan
+    if (filteredPayments) {
+      handleApplyFilter(); // Refresh list filter jika sedang dalam mode filter
+    }
+    fetchStudents();
   };
 
-  // Logika untuk filter pencarian
   const filteredStudents = useMemo(() => {
     if (!searchTerm) return students;
     return students.filter(s =>
@@ -54,7 +98,8 @@ const PaymentPage = () => {
   return (
     <>
       <div className="bg-white p-6 rounded-xl shadow-lg">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+        {/* Header & Search */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-gray-800">Manajemen Pembayaran</h1>
           <div className="relative w-full md:w-auto">
             <input
@@ -69,37 +114,120 @@ const PaymentPage = () => {
             </svg>
           </div>
         </div>
+
+        {/* Filter Section Baru */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-6 flex flex-wrap items-end gap-4 border border-gray-200">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-gray-600">Dari Tanggal</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border rounded-md text-sm"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-gray-600">Sampai Tanggal</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border rounded-md text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleApplyFilter}
+              disabled={isFiltering}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:bg-blue-300"
+            >
+              {isFiltering ? 'Loading...' : 'Filter'}
+            </button>
+            <button 
+              onClick={handleFilterToday}
+              className="bg-orange-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-600"
+            >
+              Hari Ini
+            </button>
+            {filteredPayments && (
+              <button 
+                onClick={resetFilter}
+                className="bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-500"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Member</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Pertemuan</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-              </tr>
+              {filteredPayments ? (
+                // Header untuk mode Filter Riwayat
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Member</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sesi Tambah</th>
+                </tr>
+              ) : (
+                // Header untuk mode Default (Daftar Siswa)
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Member</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sisa Pertemuan</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                </tr>
+              )}
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudents.map((student) => (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                    <div className="text-sm text-gray-500">{student.nickname || ''}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`px-3 py-1 text-sm font-semibold rounded-full ${student.remainingSessions > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {student.remainingSessions}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handlePaymentClick(student)}
-                      className="px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
-                    >
-                      Bayar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredPayments ? (
+                // Render hasil filter riwayat pembayaran
+                filteredPayments.length > 0 ? (
+                  filteredPayments.map((p) => (
+                    <tr key={p.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{p.formattedDate}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{p.studentName}</div>
+                        <div className="text-sm text-gray-500">{p.studentNickname || ''}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-green-600">
+                        Rp {p.amount.toLocaleString('id-ID')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
+                        +{p.sessionsAdded} Sesi
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500">Tidak ada pembayaran pada periode ini.</td>
+                  </tr>
+                )
+              ) : (
+                // Render daftar siswa biasa
+                filteredStudents.map((student) => (
+                  <tr key={student.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                      <div className="text-sm text-gray-500">{student.nickname || ''}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${student.remainingSessions > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {student.remainingSessions}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handlePaymentClick(student)}
+                        className="px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700"
+                      >
+                        Bayar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
