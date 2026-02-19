@@ -591,12 +591,56 @@ export const subscribeToFinancialReport = (onUpdate, onError) => {
  * @param {Date} startDate - Tanggal mulai.
  * @param {Date} endDate - Tanggal akhir.
  */
+// export const getPaymentsByDateRange = async (startDate, endDate) => {
+//   try {
+//     const studentsSnapshot = await getDocs(studentCollectionRef);
+//     const allPayments = [];
+
+//     // Set jam ke awal hari dan akhir hari agar pencarian akurat
+//     const start = new Date(startDate.setHours(0, 0, 0, 0));
+//     const end = new Date(endDate.setHours(23, 59, 59, 999));
+
+//     for (const studentDoc of studentsSnapshot.docs) {
+//       const studentData = studentDoc.data();
+//       const paymentsRef = collection(db, "students", studentDoc.id, "payments");
+      
+//       const q = query(
+//         paymentsRef,
+//         where("date", ">=", Timestamp.fromDate(start)),
+//         where("date", "<=", Timestamp.fromDate(end))
+//       );
+      
+//       const paymentsSnapshot = await getDocs(q);
+//       paymentsSnapshot.forEach(pDoc => {
+//         const pData = pDoc.data();
+//         allPayments.push({
+//           ...pData,
+//           id: pDoc.id,
+//           studentName: studentData.name,
+//           studentNickname: studentData.nickname,
+//           // Mengonversi Firestore Timestamp ke JavaScript Date agar mudah diformat
+//           formattedDate: pData.date.toDate().toLocaleString('id-ID')
+//         });
+//       });
+//     }
+    
+//     // Urutkan berdasarkan tanggal terbaru
+//     return allPayments.sort((a, b) => b.date.seconds - a.date.seconds);
+//   } catch (error) {
+//     console.error("Error mengambil filter pembayaran:", error);
+//     throw error;
+//   }
+// };
+
+// ===============================================================
+// FUNGSI UNTUK EXPORT HASIL FILTER PEMBAYARAN KE EXCEL
+// ===============================================================
+
 export const getPaymentsByDateRange = async (startDate, endDate) => {
   try {
     const studentsSnapshot = await getDocs(studentCollectionRef);
     const allPayments = [];
 
-    // Set jam ke awal hari dan akhir hari agar pencarian akurat
     const start = new Date(startDate.setHours(0, 0, 0, 0));
     const end = new Date(endDate.setHours(23, 59, 59, 999));
 
@@ -616,15 +660,14 @@ export const getPaymentsByDateRange = async (startDate, endDate) => {
         allPayments.push({
           ...pData,
           id: pDoc.id,
+          studentId: studentDoc.id, // <-- TAMBAHKAN INI
           studentName: studentData.name,
           studentNickname: studentData.nickname,
-          // Mengonversi Firestore Timestamp ke JavaScript Date agar mudah diformat
           formattedDate: pData.date.toDate().toLocaleString('id-ID')
         });
       });
     }
     
-    // Urutkan berdasarkan tanggal terbaru
     return allPayments.sort((a, b) => b.date.seconds - a.date.seconds);
   } catch (error) {
     console.error("Error mengambil filter pembayaran:", error);
@@ -632,9 +675,6 @@ export const getPaymentsByDateRange = async (startDate, endDate) => {
   }
 };
 
-// ===============================================================
-// FUNGSI UNTUK EXPORT HASIL FILTER PEMBAYARAN KE EXCEL
-// ===============================================================
 export const exportPaymentsToExcel = async (startDate, endDate) => {
   try {
     // Ambil data pembayaran dengan fungsi yang sudah ada
@@ -671,6 +711,37 @@ export const exportPaymentsToExcel = async (startDate, endDate) => {
     return wb;
   } catch (error) {
     console.error("Error exporting payments to Excel:", error);
+    throw error;
+  }
+};
+
+
+export const getAllPayments = async () => {
+  try {
+    const studentsSnapshot = await getDocs(studentCollectionRef);
+    const allPayments = [];
+
+    for (const studentDoc of studentsSnapshot.docs) {
+      const studentData = studentDoc.data();
+      const paymentsRef = collection(db, "students", studentDoc.id, "payments");
+      const q = query(paymentsRef, orderBy("date", "desc"));
+      const paymentsSnapshot = await getDocs(q);
+      paymentsSnapshot.forEach(pDoc => {
+        const pData = pDoc.data();
+        allPayments.push({
+          ...pData,
+          id: pDoc.id,
+          studentId: studentDoc.id,
+          studentName: studentData.name,
+          studentNickname: studentData.nickname,
+          formattedDate: pData.date.toDate().toLocaleString('id-ID')
+        });
+      });
+    }
+    
+    return allPayments.sort((a, b) => b.date.seconds - a.date.seconds);
+  } catch (error) {
+    console.error("Error mengambil semua pembayaran:", error);
     throw error;
   }
 };
