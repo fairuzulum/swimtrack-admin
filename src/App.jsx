@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 import ReportPage from './pages/ReportPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ClassReportPage from './pages/ClassReportPage';
+import AddPaymentPage from './pages/AddPaymentPage';
 
 // Komponen untuk melindungi halaman yang butuh login
 function ProtectedRoute({ children }) {
@@ -42,6 +43,7 @@ function App() {
           <Route index element={<DashboardPage />} /> 
           {/* Halaman Laporan Keuangan */}
           <Route path="financials" element={<FinancialPage />} />
+          <Route path="add-payment" element={<AddPaymentPage />} />
           <Route path="payments" element={<PaymentPage />} />
           <Route path="attendance" element={<AttendancePage />} />
           <Route path="member/:id" element={<StudentDetailPage />} />
